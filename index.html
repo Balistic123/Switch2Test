@@ -38,19 +38,16 @@
             for (let entry of entries) {
                 const hex = floatToHex(entry.boundingClientRect.top);
 
-                // 1. CYAN STABILIZATION
                 if (hex.startsWith("0x3") || hex.startsWith("0xb") || hex.startsWith("0xc") || hex.startsWith("0x7")) {
                     // Calculate the Page Base (masking the last 3 digits)
                     const base = hex.slice(0, -3) + "000";
                     log(`STABILIZED_BASE: ${base} (from ${hex})`, "#0ff");
                 } 
-                // 2. WHITE HIT (Direct)
                 else if (hex.startsWith("0x0000") && hex !== "0x0000000000000000") {
                     trapped = true;
                     log(`!!! ABSOLUTE_CODE_HIT: ${hex} !!!`, "#fff");
                     target.style.background = "#fff";
                 }
-                // 3. DATA
                 else if (!hex.startsWith("0x4069")) {
                     log(`DATA: ${hex}`, "#006600");
                 }
